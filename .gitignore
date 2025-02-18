@@ -1,3 +1,7 @@
+.prettierrc
+package-lock.json
+requests.rest
+
 # Logs
 logs
 *.log
