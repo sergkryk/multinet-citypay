@@ -4,7 +4,8 @@ import { HttpError } from '../utils/errorHadler';
 const requiredEnvVars = [
 	'BILLING_URL',
 	'BILLING_LOGIN',
-	'BILLING_PASS'
+	'BILLING_PASS',
+	'MULTINET_MANAGER_ID'
 ];
 
 function validateEnvVars(): void {

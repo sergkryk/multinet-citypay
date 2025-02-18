@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { CityPayError, responses } from '../../services/citypay/citypay';
-import { isBaseQuery } from '../../services/citypay/types';
-import NodeSoap from '../../services/soap/soap';
-import { convertToXml } from '../../services/xml-js/xmljs';
-import { SoapAgreement, SoapPaymentFull } from '../../services/soap/types';
+import { CityPayError, responses } from '../services/citypay/citypay';
+import { isBaseQuery } from '../services/citypay/types';
+import NodeSoap from '../services/soap/soap';
+import { convertToXml } from '../services/xml-js/xmljs';
+import { SoapAgreement, SoapPaymentFull } from '../services/soap/types';
 // GET controller
 export const psbGetController = async function (req: Request, res: Response, next: NextFunction) {
 	// sets headers type to xml
@@ -57,11 +57,19 @@ function getProperVars(query: any): { amount: number; userid: number; receipt: s
 	};
 }
 // logins to billing
-async function loginToBillingClient(soapClient: NodeSoap): Promise<void> {
+export async function loginToBillingClient(soapClient: NodeSoap): Promise<void> {
 	try {
 		await soapClient.login({ login: process.env.BILLING_LOGIN!, pass: process.env.BILLING_PASS! });
 	} catch (error) {
 		throw new CityPayError('Soap client login failed', responses[2]); // Internal error if login fails
+	}
+}
+// logouts from billing
+export async function logoutFromBillingClient(soapClient: any): Promise<void> {
+	try {
+		await soapClient.logout();
+	} catch (error) {
+		console.error('Logout failed', error);
 	}
 }
 // fetches agreement by userid
@@ -107,14 +115,6 @@ async function addPayment(soapClient: NodeSoap, params: { agrmid: number; amount
 		throw new CityPayError('Add payment failed. Wrong response', responses[2]);
 	}
 	return payment;
-}
-// logouts from billing
-async function logoutFromBillingClient(soapClient: any): Promise<void> {
-	try {
-		await soapClient.logout();
-	} catch (error) {
-		console.error('Logout failed', error);
-	}
 }
 // handles check query
 export async function handleCheck(userid: number, receipt: string): Promise<string> {

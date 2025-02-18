@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { psbGetController } from "../controllers/psb/psb";
+import { psbGetController } from "../controllers/psb";
 
 const psbRouter = Router();
 psbRouter.get("/", psbGetController);

@@ -6,6 +6,11 @@ export interface BaseQuery {
 	Amount?: string;
 }
 
+export interface PayDayQuery {
+	CheckDateBegin: string
+	CheckDateEnd: string
+}
+
 export function isBaseQuery(candidate: any): candidate is BaseQuery {
 	return (
 		typeof candidate === 'object' &&
@@ -14,5 +19,14 @@ export function isBaseQuery(candidate: any): candidate is BaseQuery {
 		typeof candidate.TransactionId === 'string' &&
 		['check', 'pay', 'cancel'].includes(candidate.QueryType) &&
 		(candidate.TransactionDate === undefined || typeof candidate.TransactionDate === 'string')
+	);
+}
+
+export function isPayDayQuery(candidate: any): candidate is PayDayQuery {
+	return (
+		typeof candidate === 'object' &&
+		candidate !== null &&
+		typeof candidate.CheckDateBegin === 'string' &&
+		typeof candidate.CheckDateEnd === 'string'
 	);
 }

@@ -310,6 +310,8 @@ export interface SoapFilter {
     mul?: number; // double, default: 0
     externaldata?: string; // default: ""
     comment?: string; // default: ""
+    dtfrom?: string; // default: ""
+    dtto?: string; // default: ""
 }
 export interface SoapManagerFull {
     manager: SoapManager; // Required, of type SoapManager
