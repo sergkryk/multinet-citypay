@@ -76,7 +76,10 @@ async function fetchAgreementByUserId(soapClient: NodeSoap, userId: number): Pro
 async function fetchPaymentByReceipt(soapClient: NodeSoap, receipt: string): Promise<void> {
 	const payments = await soapClient.getPayments({ receipt });
 	if (payments !== null) {
-		throw new CityPayError('Payment already exists', responses[100]); // Not finished if payment exists
+		const filtered = payments.filter(el => el.pay.receipt === receipt);
+		if (filtered.length > 0) {
+			throw new CityPayError('Payment already exists', responses[100]); // Not finished if payment exists
+		}
 	}
 }
 // fetches payment by receipt and agrmid
@@ -89,7 +92,11 @@ async function fetchPaymentByReceiptAndAgrmid(
 		throw new CityPayError('Payment already exists', responses[100]); // Not finished if payment exists
 	}
 	if (payments.length > 1) {
-		throw new CityPayError('Payment is not unique', responses[3]);
+		const filtered = payments.filter(el => el.pay.receipt === fltParams.receipt);
+		if (filtered.length !== 1) {
+			throw new CityPayError('Payment with such receipt not found', responses[21]);
+		}
+		return filtered[0]
 	}
 	return payments[0];
 }
@@ -175,6 +182,8 @@ async function handleCancel(userid: number, receipt: string): Promise<string> {
 		const paymentToCancel = await fetchPaymentByReceiptAndAgrmid(soapClient, { receipt, agrmid });
 		const { recordid, amount } = paymentToCancel.pay;
 		const cancelled = await soapClient.cancelPayment({ receipt, agrmid, recordid });
+		// Logout from the billing client
+		await logoutFromBillingClient(soapClient);
 		return convertToXml({
 			TransactionId: { _text: receipt },
 			TransactionExt: { _text: cancelled },
@@ -187,22 +196,4 @@ async function handleCancel(userid: number, receipt: string): Promise<string> {
 		await logoutFromBillingClient(soapClient); // Ensure logout even on error
 		throw error;
 	}
-	// const payment = await this._getPayments();
-	// // проверяю платеж на соответствие типу, статусу (2 означает отмененный), совпадению провайдера проводившего и отменяющего платеж
-	// this._isAbleToCancel(payment);
-	// // делаю запрос на отмену платежа
-	// const cancelled = await this._cancelPayment(payment);
-	// // отправляю подтверждение отмененного платежа
-	// this.response.send(
-	//   convertToXml({
-	//     TransactionId: { _text: this.transactionId },
-	//     TransactionExt: { _text: cancelled[0].ret },
-	//     Amount: { _text: this.request.query.Amount },
-	//     ResultCode: { _text: xmlCodes.ok },
-	//     Comment: { _text: "" },
-	//   })
-	// );
-	// // информирую через смс об отмене оплаты
-	// await this._informClient("cancel");
-	//   }
 }

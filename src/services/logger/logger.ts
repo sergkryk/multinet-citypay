@@ -9,7 +9,14 @@ fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
 
 // Simple function to append logs to a file
 function logToFile(message: string): void {
-	const timestamp = new Date().toISOString();
+	const timestamp = new Date().toLocaleString('ru-RU', {
+		year: 'numeric',
+		month: 'long',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+	  });;
 	const logMessage = `[${timestamp}] ${message}\n`;
 	fs.appendFileSync(logFilePath, logMessage);
 }
@@ -23,7 +30,6 @@ export const logRequest = (req: any, res: any, next: Function): void => {
 };
 
 // Simple middleware to log errors
-export const logError = (err: any): void => {
-	const logMessage = `Error: ${err.message} - ${err.stack}`;
-	logToFile(logMessage);
+export const logError = (message: string): void => {
+	logToFile(message);
 };
