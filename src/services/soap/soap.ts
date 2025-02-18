@@ -83,7 +83,7 @@ export default class NodeSoap {
 	//     const result = await this.baseRequest<SoapIdName[]>(this.client.getTarifsAsync, params);
 	//     return result;
 	// }
-	async submitPayment(params: SoapPayment): Promise<SoapPaymentFull['pay']['recordid']> {
+	async submitPayment(params: Omit<SoapPayment, 'recordid'>): Promise<SoapPaymentFull['pay']['recordid']> {
 		const result = await this.baseRequest<SoapPaymentFull['pay']['recordid']>(this.client.PaymentAsync, {
 			val: params,
 		});

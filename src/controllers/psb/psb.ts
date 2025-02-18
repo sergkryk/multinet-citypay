@@ -3,6 +3,7 @@ import { CityPayError, responses } from '../../services/citypay/citypay';
 import { isBaseQuery } from '../../services/citypay/types';
 import NodeSoap from '../../services/soap/soap';
 import { convertToXml } from '../../services/xml-js/xmljs';
+import { SoapAgreement, SoapPaymentFull } from '../../services/soap/types';
 // GET controller
 export const psbGetController = async function (req: Request, res: Response, next: NextFunction) {
 	// sets headers type to xml
@@ -24,7 +25,8 @@ export const psbGetController = async function (req: Request, res: Response, nex
 				res.send(xmlPayResponse);
 				break;
 			case 'cancel':
-				await handleCancel();
+				const xmlCancelResponse = await handleCancel(userid, receipt);
+				res.send(xmlCancelResponse);
 				break;
 		}
 	} catch (error) {
@@ -63,7 +65,7 @@ async function loginToBillingClient(soapClient: NodeSoap): Promise<void> {
 	}
 }
 // fetches agreement by userid
-async function fetchAgreementByUserId(soapClient: NodeSoap, userId: number) {
+async function fetchAgreementByUserId(soapClient: NodeSoap, userId: number): Promise<SoapAgreement> {
 	const agreements = await soapClient.getAgreements({ userid: userId });
 	if (agreements.length !== 1) {
 		throw new CityPayError('Agreement not found or not unique', responses[21]); // Not found if agreement is not unique
@@ -71,11 +73,25 @@ async function fetchAgreementByUserId(soapClient: NodeSoap, userId: number) {
 	return agreements[0];
 }
 // fetches payment by receipt
-async function fetchPaymentByReceipt(soapClient: NodeSoap, receipt: string) {
+async function fetchPaymentByReceipt(soapClient: NodeSoap, receipt: string): Promise<void> {
 	const payments = await soapClient.getPayments({ receipt });
 	if (payments !== null) {
 		throw new CityPayError('Payment already exists', responses[100]); // Not finished if payment exists
 	}
+}
+// fetches payment by receipt and agrmid
+async function fetchPaymentByReceiptAndAgrmid(
+	soapClient: NodeSoap,
+	fltParams: { receipt: string; agrmid: number }
+): Promise<SoapPaymentFull> {
+	const payments = await soapClient.getPayments(fltParams);
+	if (payments === null) {
+		throw new CityPayError('Payment already exists', responses[100]); // Not finished if payment exists
+	}
+	if (payments.length > 1) {
+		throw new CityPayError('Payment is not unique', responses[3]);
+	}
+	return payments[0];
 }
 // adds payment to billing
 async function addPayment(soapClient: NodeSoap, params: { agrmid: number; amount: number; receipt: string }) {
@@ -120,11 +136,11 @@ export async function handleCheck(userid: number, receipt: string): Promise<stri
 		});
 	} catch (error) {
 		await logoutFromBillingClient(soapClient); // Ensure logout even on error
-		throw error
+		throw error;
 	}
 }
 // handles pay query
-async function handlePay(userid: number, amount: number, receipt: string) {
+async function handlePay(userid: number, amount: number, receipt: string): Promise<string> {
 	const soapClient = await NodeSoap.init();
 	try {
 		// Login to the billing client
@@ -141,14 +157,52 @@ async function handlePay(userid: number, amount: number, receipt: string) {
 			TransactionExt: { _text: recordid },
 			Amount: { _text: amount },
 			ResultCode: { _text: responses[0].ResultCode },
-			Comment: { _text: '' },
+			Comment: { _text: responses[0].Comment },
 		});
 	} catch (error) {
 		await logoutFromBillingClient(soapClient); // Ensure logout even on error
-		throw error
+		throw error;
 	}
 }
 
-async function handleCancel() {
-	throw new Error('Function not implemented.');
+async function handleCancel(userid: number, receipt: string): Promise<string> {
+	const soapClient = await NodeSoap.init();
+	try {
+		// Login to the billing client
+		await loginToBillingClient(soapClient);
+		// Fetch agrmid from agreement
+		const { agrmid } = await fetchAgreementByUserId(soapClient, userid);
+		const paymentToCancel = await fetchPaymentByReceiptAndAgrmid(soapClient, { receipt, agrmid });
+		const { recordid, amount } = paymentToCancel.pay;
+		const cancelled = await soapClient.cancelPayment({ receipt, agrmid, recordid });
+		return convertToXml({
+			TransactionId: { _text: receipt },
+			TransactionExt: { _text: cancelled },
+			Amount: { _text: amount },
+			ResultCode: { _text: responses[0].ResultCode },
+			Comment: { _text: responses[0].Comment },
+		});
+		// Get payment to cancel
+	} catch (error) {
+		await logoutFromBillingClient(soapClient); // Ensure logout even on error
+		throw error;
+	}
+	// const payment = await this._getPayments();
+	// // проверяю платеж на соответствие типу, статусу (2 означает отмененный), совпадению провайдера проводившего и отменяющего платеж
+	// this._isAbleToCancel(payment);
+	// // делаю запрос на отмену платежа
+	// const cancelled = await this._cancelPayment(payment);
+	// // отправляю подтверждение отмененного платежа
+	// this.response.send(
+	//   convertToXml({
+	//     TransactionId: { _text: this.transactionId },
+	//     TransactionExt: { _text: cancelled[0].ret },
+	//     Amount: { _text: this.request.query.Amount },
+	//     ResultCode: { _text: xmlCodes.ok },
+	//     Comment: { _text: "" },
+	//   })
+	// );
+	// // информирую через смс об отмене оплаты
+	// await this._informClient("cancel");
+	//   }
 }

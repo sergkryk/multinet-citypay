@@ -134,7 +134,7 @@ export interface SoapPayment {
     agrmid: number; // Required
     amount: number; // Required
     // Optional fields (minOccurs="0" or default values)
-    recordid?: number; // Optional, default: 0
+    recordid: number; // Optional, default: 0
     parentrecordid?: number; // Optional, default: 0
     modperson?: number; // Optional, default: -1
     currid?: number; // Optional, default: 0
