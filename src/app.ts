@@ -18,7 +18,7 @@ app.use(express.json()); // Parse JSON
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded data
 app.use(logRequest);
 // Описываю маршруты >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-app.use('/psb', psbRouter);
+app.use('/', psbRouter);
 app.use('/paydayreport', paydayRouter);
 // errors handler
 app.use(handleErrors)
