@@ -8,7 +8,7 @@ import paydayRouter from './routes/payday';
 dotenv.config();
 // interface and port to launch web server on
 const PORT = 3002;
-const INTERFACE = 'localhost';
+const INTERFACE = '127.0.0.1';
 // creates web server
 const app = express();
 // validates .env constants
