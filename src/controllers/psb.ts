@@ -4,8 +4,10 @@ import { isBaseQuery } from '../services/citypay/types';
 import NodeSoap from '../services/soap/soap';
 import { convertToXml } from '../services/xml-js/xmljs';
 import { SoapAgreement, SoapPaymentFull } from '../services/soap/types';
+import { Operators, registerReceipt } from '../services/openClient/openClient';
 // GET controller
 export const psbGetController = async function (req: Request, res: Response, next: NextFunction) {
+	console.log(req.get('host'));
 	// sets headers type to xml
 	res.set('Content-Type', 'application/xml; charset=utf-8');
 	try {
@@ -109,12 +111,22 @@ async function fetchPaymentByReceiptAndAgrmid(
 	return payments[0];
 }
 // adds payment to billing
-async function addPayment(soapClient: NodeSoap, params: { agrmid: number; amount: number; receipt: string }) {
+async function addPayment(soapClient: NodeSoap, params: { agrmid: number; amount: number; receipt: string, comment: string }) {
 	const payment = await soapClient.submitPayment(params);
 	if (isNaN(Number(payment))) {
 		throw new CityPayError('Add payment failed. Wrong response', responses[2]);
 	}
 	return payment;
+}
+// fetches account contacts
+async function fetchAccountContacts(soapClient: NodeSoap, agrmid: number): Promise<string> {
+	const account = await soapClient.getAccounts({agrmid})
+	if (account.length === 1) {
+		const { email, phone, mobile } = account[0].account
+		const finalPhone = phone || mobile
+		return finalPhone || email
+	}
+	throw new CityPayError('Fetch account contacts failed', responses[2]);
 }
 // handles check query
 export async function handleCheck(userid: number, receipt: string): Promise<string> {
@@ -153,9 +165,13 @@ async function handlePay(userid: number, amount: number, receipt: string): Promi
 		// Login to the billing client
 		await loginToBillingClient(soapClient);
 		// Fetch agrmid from agreement
-		const { agrmid } = await fetchAgreementByUserId(soapClient, userid);
+		const { agrmid, operid } = await fetchAgreementByUserId(soapClient, userid);
+		// fetch account contacts to register online check
+		const clientContact = await fetchAccountContacts(soapClient, agrmid)
+		//register online receipt
+		const receiptFZ = await registerReceipt({operId: operid as Operators, amount, clientContact})
 		// Adds payment to billing
-		const recordid = await addPayment(soapClient, { agrmid, amount, receipt });
+		const recordid = await addPayment(soapClient, { agrmid, amount, receipt, comment: receiptFZ.receipt_url || '', });
 		// Logout from the billing client
 		await logoutFromBillingClient(soapClient);
 		// Return the response XML

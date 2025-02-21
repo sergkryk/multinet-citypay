@@ -1,11 +1,12 @@
 import express from 'express';
 import dotenv from 'dotenv';
+dotenv.config();
+
 import { logRequest } from './services/logger/logger';
 import { handleErrors } from './utils/errorHadler';
 import { envValidationMiddleware } from './middleware/envVariablesCheck';
 import psbRouter from './routes/psb';
 import paydayRouter from './routes/payday';
-dotenv.config();
 // interface and port to launch web server on
 const PORT = 3002;
 const INTERFACE = '127.0.0.1';

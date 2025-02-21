@@ -12,8 +12,9 @@ export class HttpError extends Error {
 }
 // handle errors
 export function handleErrors(err: any, req: Request, res: Response, next: NextFunction): void {
-	if (err instanceof CityPayError || err instanceof Error) {
+	if (err instanceof CityPayError || err instanceof Error || err instanceof HttpError) {
 		const message = `${err.stack}, ${err.message}`;
+		console.log(err);
 		logError(message)
 		if (err instanceof CityPayError) {
 			res.send(convertToXml(err.xmlResponse))

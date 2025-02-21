@@ -5,6 +5,7 @@ import {
 	ClientLoginParams,
 	LoginParams,
 	SoapAccountFull,
+	SoapAccountsListItem,
 	SoapAgreement,
 	SoapClientLogin,
 	SoapClientVgroupFull,
@@ -98,12 +99,12 @@ export default class NodeSoap {
 		return result;
 	}
 	// methods for multinet
-	// async getAccounts(params: SoapFilter): Promise<any> {
-	//     const result = await this.baseRequest(this.client.getAccountsAsync, { flt: params });
-	//     return result;
-	// }
 	async getAgreements(params: SoapFilter): Promise<SoapAgreement[]> {
 		const result = await this.baseRequest<SoapAgreement[]>(this.client.getAgreementsAsync, { flt: params });
+		return result;
+	}
+	async getAccounts(params: SoapFilter): Promise<SoapAccountsListItem[]> {
+		const result = await this.baseRequest<SoapAccountsListItem[]>(this.client.getAccountsAsync, { flt: params });
 		return result;
 	}
 	// methods for customer portal
