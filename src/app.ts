@@ -7,6 +7,7 @@ import { handleErrors } from './utils/errorHadler';
 import { envValidationMiddleware } from './middleware/envVariablesCheck';
 import psbRouter from './routes/psb';
 import paydayRouter from './routes/payday';
+import { operatorSelect } from './middleware/operatorSelect';
 // interface and port to launch web server on
 const PORT = 3002;
 const INTERFACE = '127.0.0.1';
@@ -18,6 +19,7 @@ app.use(envValidationMiddleware);
 app.use(express.json()); // Parse JSON
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded data
 app.use(logRequest);
+app.use(operatorSelect)
 // Описываю маршруты >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 app.use('/', psbRouter);
 app.use('/paydayreport', paydayRouter);

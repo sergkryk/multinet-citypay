@@ -59,7 +59,7 @@ async function handlePaydayRequest(dates: { dtfrom: string; dtto: string }): Pro
 	const soapClient = await NodeSoap.init();
 	try {
 		// Login to the billing client
-		await loginToBillingClient(soapClient);
+		await loginToBillingClient(soapClient, { login: process.env.BILLING_LOGIN_PSB!, pass: process.env.BILLING_PASS_PSB! });
 		// gets all payments filtered by dates and manager id
 		const payments = await getPaymentsByDates(soapClient, dates);
 		// Map payments to XML format

@@ -5,36 +5,7 @@ import NodeSoap from '../services/soap/soap';
 import { convertToXml } from '../services/xml-js/xmljs';
 import { SoapAgreement, SoapPaymentFull } from '../services/soap/types';
 import { Operators, registerReceipt } from '../services/openClient/openClient';
-// GET controller
-export const psbGetController = async function (req: Request, res: Response, next: NextFunction) {
-	console.log(req.get('host'));
-	// sets headers type to xml
-	res.set('Content-Type', 'application/xml; charset=utf-8');
-	try {
-		//declares query type and validates query parameters
-		const qtype = checkQueryType(req.query);
-		const { amount, userid, receipt } = getProperVars(req.query);
-		switch (qtype) {
-			case 'check':
-				const xmlCheckResponse = await handleCheck(userid, receipt);
-				res.send(xmlCheckResponse);
-				break;
-			case 'pay':
-				if (amount === 0) {
-					throw new CityPayError('Amount must be a number and not equal to 0', responses[3]);
-				}
-				const xmlPayResponse = await handlePay(userid, amount, receipt);
-				res.send(xmlPayResponse);
-				break;
-			case 'cancel':
-				const xmlCancelResponse = await handleCancel(userid, receipt);
-				res.send(xmlCancelResponse);
-				break;
-		}
-	} catch (error) {
-		next(error);
-	}
-};
+import { RequestWithBillingConfig } from '../middleware/operatorSelect';
 // checks query type
 function checkQueryType(query: any): 'check' | 'pay' | 'cancel' {
 	if (!isBaseQuery(query)) {
@@ -59,9 +30,9 @@ function getProperVars(query: any): { amount: number; userid: number; receipt: s
 	};
 }
 // logins to billing
-export async function loginToBillingClient(soapClient: NodeSoap): Promise<void> {
+export async function loginToBillingClient(soapClient: NodeSoap, params: {login: string, pass: string}): Promise<void> {
 	try {
-		await soapClient.login({ login: process.env.BILLING_LOGIN!, pass: process.env.BILLING_PASS! });
+ 		await soapClient.login(params);
 	} catch (error) {
 		throw new CityPayError('Soap client login failed', responses[2]); // Internal error if login fails
 	}
@@ -128,12 +99,15 @@ async function fetchAccountContacts(soapClient: NodeSoap, agrmid: number): Promi
 	}
 	throw new CityPayError('Fetch account contacts failed', responses[2]);
 }
-// handles check query
-export async function handleCheck(userid: number, receipt: string): Promise<string> {
+//creates and authenticates soap client
+async function getSoapClient(params:{login: string, pass: string}): Promise<NodeSoap> {
 	const soapClient = await NodeSoap.init();
+	await loginToBillingClient(soapClient, params);
+	return soapClient;
+}
+// handles check query
+export async function handleCheck(soapClient: NodeSoap, userid: number, receipt: string): Promise<string> {
 	try {
-		// Login to the billing client
-		await loginToBillingClient(soapClient);
 		// Fetch user agreement
 		const agreement = await fetchAgreementByUserId(soapClient, userid);
 		// Check if payment exists with the given receipt
@@ -159,17 +133,14 @@ export async function handleCheck(userid: number, receipt: string): Promise<stri
 	}
 }
 // handles pay query
-async function handlePay(userid: number, amount: number, receipt: string): Promise<string> {
-	const soapClient = await NodeSoap.init();
+async function handlePay(soapClient: NodeSoap, userid: number, amount: number, receipt: string, isCash: boolean): Promise<string> {
 	try {
-		// Login to the billing client
-		await loginToBillingClient(soapClient);
 		// Fetch agrmid from agreement
 		const { agrmid, operid } = await fetchAgreementByUserId(soapClient, userid);
 		// fetch account contacts to register online check
 		const clientContact = await fetchAccountContacts(soapClient, agrmid)
 		//register online receipt
-		const receiptFZ = await registerReceipt({operId: operid as Operators, amount, clientContact})
+		const receiptFZ = await registerReceipt({operId: operid as Operators, amount, clientContact, isCash})
 		// Adds payment to billing
 		const recordid = await addPayment(soapClient, { agrmid, amount, receipt, comment: receiptFZ.receipt_url || '', });
 		// Logout from the billing client
@@ -188,11 +159,8 @@ async function handlePay(userid: number, amount: number, receipt: string): Promi
 	}
 }
 
-async function handleCancel(userid: number, receipt: string): Promise<string> {
-	const soapClient = await NodeSoap.init();
+async function handleCancel(soapClient: NodeSoap, userid: number, receipt: string): Promise<string> {
 	try {
-		// Login to the billing client
-		await loginToBillingClient(soapClient);
 		// Fetch agrmid from agreement
 		const { agrmid } = await fetchAgreementByUserId(soapClient, userid);
 		const paymentToCancel = await fetchPaymentByReceiptAndAgrmid(soapClient, { receipt, agrmid });
@@ -213,3 +181,37 @@ async function handleCancel(userid: number, receipt: string): Promise<string> {
 		throw error;
 	}
 }
+// GET controller
+export const psbGetController = async function (req: RequestWithBillingConfig, res: Response, next: NextFunction) {
+	try {
+		if (!req.billingConfig) {
+			throw new CityPayError('Failed to authenticate db client', responses[22]);
+		}
+		const { login, pass, isCash } = req.billingConfig
+		const soapClient = await getSoapClient({login, pass})
+		// sets headers type to xml
+		res.set('Content-Type', 'application/xml; charset=utf-8');
+		//declares query type and validates query parameters
+		const qtype = checkQueryType(req.query);
+		const { amount, userid, receipt } = getProperVars(req.query);
+		switch (qtype) {
+			case 'check':
+				const xmlCheckResponse = await handleCheck(soapClient, userid, receipt);
+				res.send(xmlCheckResponse);
+				break;
+			case 'pay':
+				if (amount === 0) {
+					throw new CityPayError('Amount must be a number and not equal to 0', responses[3]);
+				}
+				const xmlPayResponse = await handlePay(soapClient, userid, amount, receipt, isCash);
+				res.send(xmlPayResponse);
+				break;
+			case 'cancel':
+				const xmlCancelResponse = await handleCancel(soapClient, userid, receipt);
+				res.send(xmlCancelResponse);
+				break;
+		}
+	} catch (error) {
+		next(error);
+	}
+};

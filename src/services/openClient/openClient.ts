@@ -35,7 +35,7 @@ function getOperatorAppIdAndSecret(operid: Operators): {
 	return operator;
 }
 // Command structure for printing a receipt
-const getPrintCheckCommand = (smsEmail54FZ: string, sum: number, isCashless: boolean): PrintCheckCommand => ({
+const getPrintCheckCommand = (smsEmail54FZ: string, sum: number, isCash: boolean): PrintCheckCommand => ({
 	goods: [
 		{
 			name: 'Услуги связи',
@@ -50,8 +50,8 @@ const getPrintCheckCommand = (smsEmail54FZ: string, sum: number, isCashless: boo
 	author: 'Общество с ограниченной ответственностью "МУЛЬТИНЕТ"',
 	tag1055: '2',
 	smsEmail54FZ,
-	payed_cash: !isCashless ? sum : 0,
-	payed_cashless: isCashless ? sum : 0,
+	payed_cash: isCash ? sum : 0,
+	payed_cashless: !isCash ? sum : 0,
 	payed_credit: 0,
 	payed_prepay: 0,
 	payed_consideration: 0,
@@ -128,7 +128,7 @@ export const registerReceipt = async function (payload: RegisterReceiptPayload):
 		throw new HttpError('Cannot register receipt with this payloads!', 400);
 	}
 	// destructures payload to get variables
-	const { amount, clientContact, operId } = payload;
+	const { amount, clientContact, operId, isCash } = payload;
 	// selects operator variables based on operId
 	const { appId, secret } = getOperatorAppIdAndSecret(operId);
 	// verifies what contact type is and formats it if needed

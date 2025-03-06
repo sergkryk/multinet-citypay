@@ -36,4 +36,5 @@ export type RegisterReceiptPayload = {
   amount: number;
   clientContact: string;
   operId: Operators;
+  isCash: boolean
 };
