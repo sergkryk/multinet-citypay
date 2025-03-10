@@ -134,7 +134,7 @@ export const registerReceipt = async function (payload: RegisterReceiptPayload):
 	// verifies what contact type is and formats it if needed
 	const verifiedContact = verifyContactType(clientContact);
 	// gets command for receipt
-	const command = buildPrintCheckCommand(appId, getPrintCheckCommand(verifiedContact, amount, true));
+	const command = buildPrintCheckCommand(appId, getPrintCheckCommand(verifiedContact, amount, isCash));
 	// signs headers
 	const headers = getSignedHeaders(command, secret);
 	// prints check request
