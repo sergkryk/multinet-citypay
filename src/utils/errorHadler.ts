@@ -1,7 +1,8 @@
-import { CityPayError, responses } from '../services/citypay/citypay';
-import { logError } from '../services/logger/logger';
+import { CityPayError } from '../utils/errors/CityPayError';
+import { logError } from '../infrastructure/logger/logger';
 import { Response, Request, NextFunction } from 'express';
-import { convertToXml } from '../services/xml-js/xmljs';
+import { xmlTool } from '../infrastructure/xml-js/xmljs';
+import { cityPayResponseCodes } from '../config/citypay';
 // class to handle http errors
 export class HttpError extends Error {
 	httpStatusCode: number;
@@ -17,9 +18,9 @@ export function handleErrors(err: any, req: Request, res: Response, next: NextFu
 		console.log(err);
 		logError(message)
 		if (err instanceof CityPayError) {
-			res.send(convertToXml(err.xmlResponse))
+			res.send(xmlTool.toXML(err.xmlResponse))
 		} else {
-			res.send(convertToXml(responses[2]))
+			res.send(xmlTool.toXML(cityPayResponseCodes[2]))
 		}
 	}
 }

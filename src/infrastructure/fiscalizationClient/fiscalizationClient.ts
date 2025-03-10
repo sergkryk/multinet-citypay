@@ -4,36 +4,21 @@ import { isValidEmail, isValidPhone } from '../../utils/validators';
 import { phoneNumberFormatter } from '../../utils/prettier';
 import { HttpError } from '../../utils/errorHadler';
 
-export type Operators = 4016 | 3743;
-// open API url
-const OpenApiUrl: string = process.env.OPENCLIENT_URL!;
+// fiscalization API url
+const APP_URL: string = process.env.FISCALIZATION_API_URL!;
+
+// fiscalization API app id
+const APP_ID: string = process.env.FISCALIZATION_CLIENT_APP_ID!;
+
+// fiscalization API secret
+const APP_SECRET: string = process.env.FISCALIZATION_CLIENT_SECRET!;
+
 // Static headers
 const headers = new Headers({
 	Accept: 'application/json',
 	'Content-Type': 'application/json',
 });
-// Operators' appIds and secrets
-const operatorsAppIdAndSecret: Record<Operators, { appId: string; secret: string }> = {
-	4016: {
-		appId: process.env.ASKNET_OPENCLIENT_APP_ID!,
-		secret: process.env.ASKNET_OPENCLIENT_SECRET!,
-	},
-	3743: {
-		appId: process.env.MULTINET_OPENCLIENT_APP_ID!,
-		secret: process.env.MULTINET_OPENCLIENT_SECRET!,
-	},
-};
-// Utility functions to get AppId and Secret for an operator
-function getOperatorAppIdAndSecret(operid: Operators): {
-	appId: string;
-	secret: string;
-} {
-	const operator = operatorsAppIdAndSecret[operid];
-	if (!operator) {
-		throw new HttpError(`Operator with ID ${operid} not found.`, 400);
-	}
-	return operator;
-}
+
 // Command structure for printing a receipt
 const getPrintCheckCommand = (smsEmail54FZ: string, sum: number, isCash: boolean): PrintCheckCommand => ({
 	goods: [
@@ -56,6 +41,7 @@ const getPrintCheckCommand = (smsEmail54FZ: string, sum: number, isCash: boolean
 	payed_prepay: 0,
 	payed_consideration: 0,
 });
+
 // Generates random nonce
 function getNonce(length: number = 16): string {
 	const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -65,6 +51,7 @@ function getNonce(length: number = 16): string {
 	}
 	return nonce;
 }
+
 // Makes signature for headers from a command body
 function getSignedHeaders(commandBody: Record<string, any>, secret: string) {
 	// delete previous sign if exists
@@ -89,6 +76,7 @@ function getSignedHeaders(commandBody: Record<string, any>, secret: string) {
 	headers.append('sign', sign);
 	return headers;
 }
+
 // Adds appId and nonce to commandBody
 function buildPrintCheckCommand(appId: string, commandBody: {}): Record<string, any> {
 	return {
@@ -98,6 +86,7 @@ function buildPrintCheckCommand(appId: string, commandBody: {}): Record<string, 
 		command: commandBody,
 	};
 }
+
 // Checks payload before registering receipt
 function isRegisterReceiptPayload(payload: Record<string, unknown>): payload is RegisterReceiptPayload {
 	return (
@@ -105,12 +94,11 @@ function isRegisterReceiptPayload(payload: Record<string, unknown>): payload is 
 		payload !== null &&
 		'amount' in payload &&
 		'clientContact' in payload &&
-		'operId' in payload &&
 		typeof payload.amount === 'number' &&
-		typeof payload.clientContact === 'string' &&
-		typeof payload.operId === 'number'
+		typeof payload.clientContact === 'string'
 	);
 }
+
 // Verifies and formats contact phone or email
 function verifyContactType(clientContact: string): string {
 	if (isValidEmail(clientContact)) {
@@ -121,6 +109,7 @@ function verifyContactType(clientContact: string): string {
 		return clientContact;
 	}
 }
+
 // Register receipt function
 export const registerReceipt = async function (payload: RegisterReceiptPayload): Promise<PrintCheckResponse> {
 	// check payload
@@ -128,18 +117,16 @@ export const registerReceipt = async function (payload: RegisterReceiptPayload):
 		throw new HttpError('Cannot register receipt with this payloads!', 400);
 	}
 	// destructures payload to get variables
-	const { amount, clientContact, operId, isCash } = payload;
-	// selects operator variables based on operId
-	const { appId, secret } = getOperatorAppIdAndSecret(operId);
+	const { amount, clientContact, isCash } = payload;
 	// verifies what contact type is and formats it if needed
 	const verifiedContact = verifyContactType(clientContact);
 	// gets command for receipt
-	const command = buildPrintCheckCommand(appId, getPrintCheckCommand(verifiedContact, amount, true));
+	const command = buildPrintCheckCommand(APP_ID, getPrintCheckCommand(verifiedContact, amount, isCash));
 	// signs headers
-	const headers = getSignedHeaders(command, secret);
+	const headers = getSignedHeaders(command, APP_SECRET);
 	// prints check request
 	try {
-		const request = await fetch(`${OpenApiUrl}Command`, {
+		const request = await fetch(`${APP_URL}Command`, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(command),

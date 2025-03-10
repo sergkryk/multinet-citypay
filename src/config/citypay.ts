@@ -1,4 +1,4 @@
-export const responses = {
+export const cityPayResponseCodes = {
 	0: {
 		ResultCode: 0,
 		Comment: 'OK',
@@ -44,12 +44,3 @@ export const responses = {
 		Comment: 'Other',
 	},
 };
-
-// Класс для обработки ошибок CityPay
-export class CityPayError extends Error {
-	xmlResponse: typeof responses[keyof typeof responses];
-	constructor(message: string, xmlResponse: typeof responses[keyof typeof responses]) {
-		super(`${message}. Response code: ${xmlResponse.ResultCode}. Comment: ${xmlResponse.Comment} `);
-		this.xmlResponse = xmlResponse;
-	}
-}

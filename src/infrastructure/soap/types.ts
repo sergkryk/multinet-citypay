@@ -1,3 +1,10 @@
+export type BaseSoapResponse = [
+	{ ret: unknown } | null,
+	string,
+	string | undefined,
+	string,
+	string | undefined
+  ];
 interface SoapManager {
 	notifyclient?: number; // Optional, short, default: -1
 	personid: number; // Required, long
@@ -68,7 +75,6 @@ interface SoapManager {
 	externalid?: string; // Optional, string, default: ""
 	cashregisterfolder?: string; // Optional, string, default: ""
 }
-
 interface SoapUsergroupFull {
 	usergroup: SoapUsergroup; // Required, of type SoapUsergroup
 	// uids?: SoapLong[]; // Optional, unbounded array of SoapLong
@@ -77,7 +83,6 @@ interface SoapUsergroupFull {
 	fwrite?: number; // Optional, long, default: 0
 	defaultgroup?: number; // Optional, short, default: -1
 }
-
 interface SoapUsergroup {
 	unloadtosorm?: number; // Optional, short, default: -1
 	sormid?: number; // Optional, short, default: -1
@@ -98,7 +103,6 @@ interface SoapUsergroup {
 	uuid?: string; // Optional, string, default: ""
 	uniquegroup?: number; // Optional, short, default: -1
 }
-
 interface SoapManagersTarifsStaff {
 	personid?: number; // Optional, long, default: 0
 	fread?: number; // Optional, long, default: 0
@@ -107,7 +111,6 @@ interface SoapManagersTarifsStaff {
 	tartype?: number; // Optional, long, default: 0
 	tardescr?: string; // Optional, string, default: ""
 }
-
 interface SoapUprsPayment {
 	uprscurrency: string; // Required
 	paymentdate: string; // Required
@@ -122,12 +125,10 @@ interface SoapUprsPayment {
 	agentname: string; // Required
 	subscriberid: string; // Required
 }
-
 interface SoapPaymentOrderIdName {
 	orderid?: number; // Optional, long, default: 0
 	ordernum?: string; // Optional, string, default: ""
 }
-
 export interface SoapPayment {
 	// Required fields (minOccurs="1")
 	agrmid: number; // Required
@@ -156,7 +157,6 @@ export interface SoapPayment {
 	paymentordernumber?: string; // Optional, default: ""
 	uprs?: SoapUprsPayment[]; // Optional, unbounded array
 }
-
 export interface SoapPaymentFull {
 	pay: SoapPayment; // Required, of type SoapPayment (should be defined elsewhere)
 	bsodoc?: number; // Optional, long, default: 0
@@ -309,6 +309,7 @@ export interface SoapFilter {
 	mul?: number; // double, default: 0
 	externaldata?: string; // default: ""
 	comment?: string; // default: ""
+	login?: string; // default: ""
 	dtfrom?: string; // default: ""
 	dtto?: string; // default: ""
 }

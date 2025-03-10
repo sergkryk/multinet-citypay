@@ -1,20 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
-import { HttpError } from '../utils/errorHadler';
+import { HttpError } from '../../utils/errorHadler';
 
 const requiredEnvVars = [
 	'BILLING_URL',
 	'BILLING_LOGIN_PSB',
 	'BILLING_LOGIN_POST',
-	'BILLING_LOGIN_ABONOTDEL',
 	'BILLING_PASS_PSB',
 	'BILLING_PASS_POST',
-	'BILLING_PASS_ABONOTDEL',
-	'MULTINET_MANAGER_ID',
-	'ASKNET_OPENCLIENT_SECRET',
-	'ASKNET_OPENCLIENT_APP_ID',
-	'MULTINET_OPENCLIENT_APP_ID',
-	'MULTINET_OPENCLIENT_SECRET',
-	'OPENCLIENT_URL'
+	'FISCALIZATION_CLIENT_APP_ID',
+	'FISCALIZATION_CLIENT_SECRET',
+	'FISCALIZATION_API_URL'
 ];
 
 function validateEnvVars(): void {

@@ -1,5 +1,3 @@
-import { Operators } from "./openClient";
-
 export type PrintCheckItem = {
   name: string;
   price: number;
@@ -35,6 +33,5 @@ export type OpenClientRequest = {
 export type RegisterReceiptPayload = {
   amount: number;
   clientContact: string;
-  operId: Operators;
   isCash: boolean
 };

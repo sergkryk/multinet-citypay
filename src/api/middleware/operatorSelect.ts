@@ -21,11 +21,6 @@ const billingConfigs: Record<string, BConfigs> = {
         pass: process.env.BILLING_PASS_POST!,
         isCash: false
     },
-    abonotdel: {
-        login: process.env.BILLING_LOGIN_ABONOTDEL!,
-        pass: process.env.BILLING_PASS_ABONOTDEL!,
-        isCash: true
-    }
 }
 
 export function operatorSelect(req: RequestWithBillingConfig, res: Response, next: NextFunction): void {
