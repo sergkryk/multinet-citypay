@@ -6,6 +6,7 @@ import { convertToXml } from '../services/xml-js/xmljs';
 import { SoapAgreement, SoapPaymentFull } from '../services/soap/types';
 import { Operators, registerReceipt } from '../services/openClient/openClient';
 import { RequestWithBillingConfig } from '../middleware/operatorSelect';
+import { sendSms } from '../services/smssend/smssend';
 // checks query type
 function checkQueryType(query: any): 'check' | 'pay' | 'cancel' {
 	if (!isBaseQuery(query)) {
@@ -143,6 +144,8 @@ async function handlePay(soapClient: NodeSoap, userid: number, amount: number, r
 		const receiptFZ = await registerReceipt({operId: operid as Operators, amount, clientContact, isCash})
 		// Adds payment to billing
 		const recordid = await addPayment(soapClient, { agrmid, amount, receipt, comment: receiptFZ.receipt_url || '', });
+		// Send SMS
+		const smssend = await sendSms(clientContact, receiptFZ.receipt_url);
 		// Logout from the billing client
 		await logoutFromBillingClient(soapClient);
 		// Return the response XML
