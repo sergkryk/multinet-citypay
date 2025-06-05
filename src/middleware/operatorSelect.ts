@@ -25,6 +25,11 @@ const billingConfigs: Record<string, BConfigs> = {
         login: process.env.BILLING_LOGIN_ABONOTDEL!,
         pass: process.env.BILLING_PASS_ABONOTDEL!,
         isCash: true
+    },
+    pay: {
+        login: process.env.BILLING_LOGIN_PAYBERRY!,
+        pass: process.env.BILLING_PASS_PAYBERRY!,
+        isCash: false
     }
 }
 
